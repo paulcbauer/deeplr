@@ -1,0 +1,11 @@
+Package: deeplr
+Type: Package
+Title: Translate with DeepL
+Version: 0.1.0
+Author: Paul C. Bauer
+Maintainer: Paul C. Bauer <mail@paulcbauer.eu>
+Description: The translate() function takes text data in the form of a character vector or a character column in a dataframe and translates it relying on DeepL (https://www.deepl.com/translator).
+License: CC BY-NC-SA 4.0
+Encoding: UTF-8
+LazyData: true
+Depends: httr, jsonlite, dplyr, stringr, svMisc

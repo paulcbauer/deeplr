@@ -1,0 +1,45 @@
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+deeplr
+======
+
+The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains a singular function - `translate()` - that accesses the unofficial DeepL API. Since it is not based on an official API it may stop to function at any time.
+
+I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) and relied on some code provided by [Grzegorz Kulikowski](https://psvmware.wordpress.com/2017/09/11/get-deepltranslation-translating-straight-from-your-powershell/) and [this blog post](https://itsalocke.com/blog/r-quick-tip-microsoft-cognitive-services-text-analytics-api/) to figure out how to extract information from the "API" in R.
+
+Installation: How do I get it?
+------------------------------
+
+``` r
+# Development version
+# install.packages("devtools")
+devtools::install_github("paulcbauer/deeplr")
+```
+
+Example: How do I use it?
+-------------------------
+
+You can feed `translate()` with a character vector or a dataframe.
+
+``` r
+# Translate a single string
+  dat <- "Essentially, all models are wrong, but some are useful."
+  translate(dataset = dat)
+
+# Translate a character vector
+  dat <- c("The only way to find out what happens when a complex system is disturbed, is to disturb the system, not merely observe it passively.", 
+           "The whole problem with the world is that fools and fanatics are always so certain of themselves, but wiser people are so full of doubts.")
+  translate(dataset = dat)
+
+# Translate a column in a dataframe
+  library(translateR)
+  data(enron)
+  translate(dataset = enron,
+            column.name = "email")
+```
+
+Next steps
+----------
+
+-   Increase efficiency of code
+-   Add option to output multiple languages
+-   Test robustness.. encoding issues etc.
