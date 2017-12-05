@@ -35,20 +35,27 @@ devtools::install_github("paulcbauer/deeplr")
 You can feed ```translate()``` with a character vector or a dataframe. 
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE, paged.print=FALSE}
+# Load the package
+  library(deeplr)
+
 # Translate a single string
-  dat <- "Essentially, all models are wrong, but some are useful."
+  dat <- "Essentially, all models are wrong, but some are useful"
   translate(dataset = dat)
 
 # Translate a character vector
-  dat <- c("The only way to find out what happens when a complex system is disturbed, is to disturb the system, not merely observe it passively.", 
-           "The whole problem with the world is that fools and fanatics are always so certain of themselves, but wiser people are so full of doubts.")
+  dat <- c("The only way to find out what happens is to disturb the system",
+           "The whole problem with the world is that fools are always so certain of themselves")
   translate(dataset = dat)
 
 # Translate a column in a dataframe
-  library(translateR)
-  data(enron)
-  translate(dataset = enron,
-            column.name = "email")
+  dat <- data.frame(text = c("The only way to find out what happens is to disturb the system",
+           "The whole problem with the world is that fools are always so certain of themselves"))
+  translate(dataset = dat, column.name = "text", source.lang = "EN", target.lang = "ES")
+
+
+  swiss$country <- rownames(swiss)
+  translate(dataset = swiss, column.name = "country", source.lang = "FR", target.lang = "EN")
+  # well...
 ```
 
 
