@@ -55,7 +55,11 @@ You can feed `translate()` with a single string, a vector of strings (class "cha
 
 
   swiss$country <- rownames(swiss)
-  translate(dataset = swiss, column.name = "country", source.lang = "FR", target.lang = "EN")
+  translate(dataset = swiss, 
+            column.name = "country", 
+            source.lang = "FR", 
+            target.lang = "EN",
+            auth_key = "enter your key here")
   # well...
 ```
 
