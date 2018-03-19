@@ -2,12 +2,17 @@
 deeplr
 ======
 
-The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains a singular function - `translate()` - that accesses the unofficial DeepL API. Since it is not based on an official API it may stop to function at any time.
+The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains a singular function - `translate()` - that accesses the DeepL API. I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) package.
 
-I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) and relied on some code provided by [Grzegorz Kulikowski](https://psvmware.wordpress.com/2017/09/11/get-deepltranslation-translating-straight-from-your-powershell/) and [this blog post](https://itsalocke.com/blog/r-quick-tip-microsoft-cognitive-services-text-analytics-api/) to figure out how to extract information from the "API" in R.
+To access the API you need to get your own API key from deeplr: <https://www.deepl.com/api-contact.html>.
 
-Installation: How do I get it?
-------------------------------
+Beware of the API request limits. See <https://www.deepl.com/api-reference.html>.
+
+-   "The request size should not exceed 30kbytes. The maximum number of texts to be translated within one request should not exceed 50."
+-   "Please ensure your client does not exceed the limits as specified in the quota documentation delivered to you."
+
+Installation: How do I get the package?
+---------------------------------------
 
 ``` r
 # Development version
@@ -15,10 +20,10 @@ Installation: How do I get it?
 devtools::install_github("paulcbauer/deeplr")
 ```
 
-Example: How do I use it?
--------------------------
+Example: How do I use the package?
+----------------------------------
 
-You can feed `translate()` with a character vector or a dataframe.
+You can feed `translate()` with a single string, a vector of strings (class "character") or a dataframe that contains a column of class "character".
 
 ``` r
 # Load the package
@@ -26,17 +31,27 @@ You can feed `translate()` with a character vector or a dataframe.
 
 # Translate a single string
   dat <- "Essentially, all models are wrong, but some are useful"
-  translate(dataset = dat)
+  translate(dataset = dat,
+            source.lang = "EN",
+            target.lang = "DE",
+            auth_key = "enter your key here")
 
 # Translate a character vector
   dat <- c("The only way to find out what happens is to disturb the system",
            "The whole problem with the world is that fools are always so certain of themselves")
-  translate(dataset = dat)
+  translate(dataset = dat,
+            source.lang = "EN",
+            target.lang = "DE",
+            auth_key = "enter your key here")
 
 # Translate a column in a dataframe
   dat <- data.frame(text = c("The only way to find out what happens is to disturb the system",
            "The whole problem with the world is that fools are always so certain of themselves"))
-  translate(dataset = dat, column.name = "text", source.lang = "EN", target.lang = "ES")
+  translate(dataset = dat,
+            source.lang = "EN",
+            target.lang = "DE",
+            column.name = "text",
+            auth_key = "enter your key here")
 
 
   swiss$country <- rownames(swiss)
