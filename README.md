@@ -23,7 +23,7 @@ devtools::install_github("paulcbauer/deeplr")
 Example: How do I use the package?
 ----------------------------------
 
-You can feed `translate()` with a single string, a vector of strings (class "character") or a dataframe that contains a column of class "character".
+You can feed `translate()` with a single string, a vector of strings (class "character") or a dataframe that contains a column of class "character". It will return the same format.
 
 ``` r
 # Load the package
@@ -69,3 +69,8 @@ Next steps
 -   Increase efficiency of code
 -   Add option to output multiple languages
 -   Test robustness.. encoding issues etc.
+
+License
+-------
+
+MIT

@@ -139,7 +139,7 @@ devtools::install_github(&quot;paulcbauer/deeplr&quot;)</code></pre>
 </div>
 <div id="example-how-do-i-use-the-package" class="section level2">
 <h2>Example: How do I use the package?</h2>
-<p>You can feed <code>translate()</code> with a single string, a vector of strings (class “character”) or a dataframe that contains a column of class “character”.</p>
+<p>You can feed <code>translate()</code> with a single string, a vector of strings (class “character”) or a dataframe that contains a column of class “character”. It will return the same format.</p>
 <pre class="r"><code># Load the package
   library(deeplr)
 
@@ -169,7 +169,11 @@ devtools::install_github(&quot;paulcbauer/deeplr&quot;)</code></pre>
 
 
   swiss$country &lt;- rownames(swiss)
-  translate(dataset = swiss, column.name = &quot;country&quot;, source.lang = &quot;FR&quot;, target.lang = &quot;EN&quot;)
+  translate(dataset = swiss, 
+            column.name = &quot;country&quot;, 
+            source.lang = &quot;FR&quot;, 
+            target.lang = &quot;EN&quot;,
+            auth_key = &quot;enter your key here&quot;)
   # well...</code></pre>
 </div>
 <div id="next-steps" class="section level2">
@@ -179,6 +183,10 @@ devtools::install_github(&quot;paulcbauer/deeplr&quot;)</code></pre>
 <li>Add option to output multiple languages</li>
 <li>Test robustness.. encoding issues etc.</li>
 </ul>
+</div>
+<div id="license" class="section level2">
+<h2>License</h2>
+<p>MIT</p>
 </div>
 </div>
 
