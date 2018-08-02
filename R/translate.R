@@ -13,7 +13,7 @@ if(is.null(auth_key)){cat("You need an API key. See https://www.deepl.com/api-co
 if(inherits(dataset,"character")==TRUE&length(dataset)==1){
     i <- dataset
     i <- stringr::str_replace(gsub("\\s+", "%20", stringr::str_trim(i)), "B", "b")
-    response <- GET(paste(url,
+    response <- httr::GET(paste(url,
                           i,
                           "&source_lang=", source.lang,
                           "&target_lang=", target.lang,
