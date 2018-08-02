@@ -2,7 +2,7 @@
 deeplr
 ======
 
-The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains a singular function - `translate()` - that accesses the DeepL API. I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) package.
+The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains functions - `translate_vec()` and `translate_df()` - that access the DeepL API. I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) package.
 
 To access the API you need to get your own API key from deeplr: <https://www.deepl.com/api-contact.html>.
 
@@ -23,43 +23,66 @@ devtools::install_github("paulcbauer/deeplr")
 Example: How do I use the package?
 ----------------------------------
 
-You can feed `translate()` with a single string, a vector of strings (class "character") or a dataframe that contains a column of class "character". It will return the same format.
+You can feed `translate_vec()` with a single string, a vector of strings (class "character"). You can feed `translate_df()` with a dataframe that contains a column of class "character".
 
 ``` r
 # Load the package
   library(deeplr)
 
-# Translate a single string
-  dat <- "Essentially, all models are wrong, but some are useful"
-  translate(dataset = dat,
-            source.lang = "EN",
-            target.lang = "DE",
-            auth_key = "enter your key here")
-
-# Translate a character vector
-  dat <- c("The only way to find out what happens is to disturb the system",
+# Translate a single string/character vector
+  dat <- c("La seule facon de savoir ce qui se passe est de perturber le systeme.",
            "The whole problem with the world is that fools are always so certain of themselves")
-  translate(dataset = dat,
-            source.lang = "EN",
-            target.lang = "DE",
-            auth_key = "enter your key here")
 
+# Without language detection and without adding set/detected source language.
+  translate_vec(dataset = dat,
+                source.lang = "EN",
+                target.lang = "DE",
+                auth_key = "enter you auth key here")
+
+  dat <- c("A dog.",
+           "Un chien.",
+           "Un perro.",
+           "Un cane.",
+           "Een hond.")
+
+# With language detection and with adding set/detected source language.
+  translate_vec(dataset = dat,
+                source.lang = "detect",
+                target.lang = "DE",
+                add.source.lang = TRUE,
+                auth_key = "enter you auth key here")
+
+  
+  
+  
+  
 # Translate a column in a dataframe
-  dat <- data.frame(text = c("The only way to find out what happens is to disturb the system",
-           "The whole problem with the world is that fools are always so certain of themselves"))
-  translate(dataset = dat,
-            source.lang = "EN",
-            target.lang = "DE",
-            column.name = "text",
-            auth_key = "enter your key here")
+  dat <- data.frame(text = c("La seule facon de savoir ce qui se passe est de perturber
+                              le systeme.",
+                              "The whole problem with the world is that fools are always so
+                              certain of themselves"))
 
 
-  swiss$country <- rownames(swiss)
-  translate(dataset = swiss, 
-            column.name = "country", 
-            source.lang = "FR", 
-            target.lang = "EN",
-            auth_key = "enter your key here")
+# Without language detection and without adding set/detected source language.
+  translate_df(dataset = dat,
+               column.name = "text",
+               source.lang = "EN",
+               target.lang = "DE",
+               auth_key = "enter you auth key here")
+
+  dat <- data.frame(text = c("A dog.",
+                             "Un chien.",
+                             "Un perro.",
+                             "Un cane.",
+                             "Een hond."))
+
+# With language detection and with adding set/detected source language.
+  translate_df(dataset = dat,
+               column.name = "text",
+               source.lang = "detect",
+               target.lang = "DE",
+               add.source.lang = TRUE,
+               auth_key = "enter you auth key here")
   # well...
 ```
 
@@ -73,4 +96,4 @@ Next steps
 License
 -------
 
-MIT
+License: CC BY-NC-SA 4.0
