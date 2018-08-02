@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1346981600",
+    "hash" : "1677552591",
     "id" : "35CFFFCE",
-    "lastKnownWriteTime" : 1533230573,
-    "last_content_update" : 1533230573100,
+    "lastKnownWriteTime" : 1533231563,
+    "last_content_update" : 1533231563098,
     "path" : "C:/GoogleDrive/7-Software/deeplr/README.Rmd",
     "project_path" : "README.Rmd",
     "properties" : {
-        "cursorPosition" : "36,0",
-        "scrollLine" : "35"
+        "cursorPosition" : "18,220",
+        "scrollLine" : "9"
     },
     "relative_order" : 3,
     "source_on_save" : false,
