@@ -5,7 +5,7 @@
 \title{Translates a column in a dataframe.}
 \usage{
 translate_df(dataset = NULL, column.name = NULL, source.lang = "DE",
-  target.lang = "EN", auth_key = NULL,
+  target.lang = "EN", add.source.lang = FALSE, auth_key = NULL,
   url = "https://api.deepl.com/v1/translate?text=")
 }
 \arguments{
@@ -17,37 +17,47 @@ translate_df(dataset = NULL, column.name = NULL, source.lang = "DE",
 
 \item{target.lang}{Target language. One of "EN", "FR", etc.}
 
+\item{add.source.lang}{A logical. If TRUE adds the preset or detected language for each
+translation. FALSE (default) adds nothing.}
+
 \item{auth_key}{Your API key.}
 
 \item{url}{Url to DeepL API.}
 }
 \value{
-Dataframe with original columns, translated column and column indicated detected or set source language.
+Dataframe with original columns and translated column. add.source.lang = TRUE adds
+additional column "source_lang".
 }
 \description{
 Translates a column in a dataframe.
 }
 \examples{
 \dontrun{
-dat <- data.frame(text = c("La seule facon de savoir ce qui se passe est de perturber le systeme.",
-                           "The whole problem with the world is that fools are always so certain of themselves"))
+  dat <- data.frame(text = c("La seule facon de savoir ce qui se passe est de perturber
+                              le systeme.",
+                              "The whole problem with the world is that fools are always so
+                              certain of themselves"))
 
- translate_df(dataset = dat,
-              column.name = "text",
-              source.lang = "EN",
-              target.lang = "DE",
-              auth_key = "enter you auth key here")
 
-dat <- data.frame(text = c("A dog.",
-                           "Un chien.",
-                           "Un perro.",
-                           "Un cane.",
-                           "Een hond."))
+# Without language detection and without adding set/detected source language.
+  translate_df(dataset = dat,
+               column.name = "text",
+               source.lang = "EN",
+               target.lang = "DE",
+               auth_key = "enter you auth key here")
 
- translate_df(dataset = dat,
-              column.name = "text",
-              source.lang = "detect",
-              target.lang = "DE",
-              auth_key = "enter you auth key here")
+  dat <- data.frame(text = c("A dog.",
+                             "Un chien.",
+                             "Un perro.",
+                             "Un cane.",
+                             "Een hond."))
+
+# With language detection and with adding set/detected source language.
+  translate_df(dataset = dat,
+               column.name = "text",
+               source.lang = "detect",
+               target.lang = "DE",
+               add.source.lang = TRUE,
+               auth_key = "enter you auth key here")
 }
 }

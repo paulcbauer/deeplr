@@ -5,7 +5,8 @@
 \title{Translates a character vector.}
 \usage{
 translate_vec(dataset = NULL, source.lang = "DE", target.lang = "EN",
-  auth_key = NULL, url = "https://api.deepl.com/v1/translate?text=")
+  add.source.lang = FALSE, auth_key = NULL,
+  url = "https://api.deepl.com/v1/translate?text=")
 }
 \arguments{
 \item{dataset}{A character vector.}
@@ -14,35 +15,42 @@ translate_vec(dataset = NULL, source.lang = "DE", target.lang = "EN",
 
 \item{target.lang}{Target language. One of "EN", "FR", etc.}
 
+\item{add.source.lang}{A logical. If TRUE adds the preset or detected language for each
+translation. FALSE (default) adds nothing.}
+
 \item{auth_key}{Your API key.}
 
 \item{url}{Url to DeepL API.}
 }
 \value{
-A character vector. If source.lang = "detect" also the detected languages.
+A character vector. If add.source.lang = TRUE a dataframe with an additional
+column "source_lang".
 }
 \description{
 Translates a character vector.
 }
 \examples{
 \dontrun{
-dat <- c("La seule facon de savoir ce qui se passe est de perturber le systeme.",
-         "The whole problem with the world is that fools are always so certain of themselves"))
+  dat <- c("La seule facon de savoir ce qui se passe est de perturber le systeme.",
+           "The whole problem with the world is that fools are always so certain of themselves")
 
- translate_vec(dataset = dat,
-              source.lang = "EN",
-              target.lang = "DE",
-              auth_key = "enter you auth key here")
+# Without language detection and without adding set/detected source language.
+  translate_vec(dataset = dat,
+                source.lang = "EN",
+                target.lang = "DE",
+                auth_key = "enter you auth key here")
 
-dat <- c("A dog.",
-         "Un chien.",
-         "Un perro.",
-         "Un cane.",
-         "Een hond.")
+  dat <- c("A dog.",
+           "Un chien.",
+           "Un perro.",
+           "Un cane.",
+           "Een hond.")
 
- translate_vec(dataset = dat,
-              source.lang = "detect",
-              target.lang = "DE",
-              auth_key = "enter you auth key here")
+# With language detection and with adding set/detected source language.
+  translate_vec(dataset = dat,
+                source.lang = "detect",
+                target.lang = "DE",
+                add.source.lang = TRUE,
+                auth_key = "enter you auth key here")
 }
 }

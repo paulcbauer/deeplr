@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1533228305728.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F27A9EBB",
+    "lastKnownWriteTime" : 1533229752,
+    "last_content_update" : 1533229752173,
+    "path" : "C:/GoogleDrive/7-Software/deeplr/R/translate_df.R",
+    "project_path" : "R/translate_df.R",
+    "properties" : {
+        "cursorPosition" : "122,0",
+        "scrollLine" : "62"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

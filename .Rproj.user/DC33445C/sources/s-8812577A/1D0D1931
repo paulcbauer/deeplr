@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1533228329894.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "1D0D1931",
+    "lastKnownWriteTime" : 1533229648,
+    "last_content_update" : 1533229648387,
+    "path" : "C:/GoogleDrive/7-Software/deeplr/R/translate_vec.R",
+    "project_path" : "R/translate_vec.R",
+    "properties" : {
+        "cursorPosition" : "20,38",
+        "scrollLine" : "38"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

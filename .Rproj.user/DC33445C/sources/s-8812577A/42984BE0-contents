@@ -1,0 +1,983 @@
+---
+title: |
+  | The Polarization of Trust in the EU*^[ Acknowledgements: We thank.... Contact: mail@paulcbauer.eu, davide.morisi@univie.ac.at]
+author: |
+  | Paul C. Bauer (MZES, Mannheim) 
+  | Davide Morisi (University of Wien)
+date: ''
+linestretch: 1.2
+colorlinks: true
+abstract: \noindent\setstretch{1}Scholars usually investigate how average levels of trust in EU institutions vary across countries and across time. In the present study we change the perspective. Instead of focusing on trust averages, we investigate trust polarization across European populations, relying on different measures of polarization. We base our analysis on data from the European Social Survey that span the years 2002 to 2016, which allows for a comparative perspective both across countries and time. Our evidence suggests that European populations strongly differ in their level of polarization. Moreover, there are also strong differences in time trends of polarization. An investigation of between group polarization of exogenously defined groups remains inconclusive in what regards the drivers of this polarization.\vspace{.8cm}
+bibliography: Paperpile.bib
+output: 
+  bookdown::pdf_document2:
+    includes:
+      in_header: header.tex
+    toc: no
+    keep_tex: true
+mainfont: Wingdings
+sansfont: Wingdings
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+always_allow_html: yes
+header-includes:
+   - \usepackage{dcolumn}
+   - \usepackage{color}
+---
+
+\newcommand*{\secref}[1]{Section~\ref{#1}}
+
+```{r setup, include = FALSE, cache = FALSE}
+  set.seed(12345)
+  rm(list=ls())
+  library(knitr)
+  library(dplyr)
+  library(stringr)
+  # DATA 
+    # European Social Survey: http://www.europeansocialsurvey.org/
+  
+  # cat(paste("#", capture.output(sessionInfo()), "\n", collapse =""))
+```
+
+
+
+```{r import-data, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
+
+# education
+    #  (lower education [i.e., International Standard Classification of Education (ISCED) 0, 1 and 2] contrasted with higher education [i.e., ISCED 3–6] used as reference)
+
+  library(plyr)
+  library(dplyr)
+  library(stringr)
+  library(tidyr)
+  library(haven)
+  library(stargazer)
+
+  rm(list=ls())
+
+# Load datasets, subset and generate objects
+  datasets <- dir(".", pattern = "ESS[0-9]e[0-9][0-9]_[0-9].dta", full.names = TRUE)
+  years <- 2002+seq(0,14,2) 
+  for(i in 1:8){
+  data <- read_dta(datasets[i])
+  data <- data %>% select(essround, idno, cntry, trstprl, trstlgl, trstplc, trstplt, trstep, trstun, agea, eduyrs, hincfel, mainact, dweight, pweight)
+  
+  # Education, income, employment, age
+  
+  data <- data %>% dplyr::rename(trust_parliament = trstprl, 
+                          trust_legalsystem = trstlgl, 
+                          trust_police = trstplc, 
+                          trust_politicians = trstplt, 
+                          trust_euparliament = trstep, 
+                          trust_un = trstun,
+                          age = agea,
+                          hincome_feeling = hincfel)
+  # names(data) <- paste(names(data), "_", str_extract(str_replace(i, "\\./", ""), "^.{4}"), sep="")
+  assign(paste(str_extract(str_replace(datasets[i], "\\./", ""), "^.{4}"), "_", years[i], sep=""), data.frame(data))
+  print(i)
+  }
+  rm(data, datasets, i, years)
+  
+  
+# Create longformat
+  liste <- list(ESS1_2002, ESS2_2004, ESS3_2006, ESS4_2008, ESS5_2010, ESS6_2012, ESS7_2014, ESS8_2016)
+  # GENERATE LONG FORMAT DATASET
+  liste2 <- liste
+  years <- c("2002", "2004", "2006", "2008", "2010", "2012", "2014", "2016")
+  for (i in 1:8){
+    liste2[[i]] <- liste2[[i]] %>% mutate(year = years[i])
+  }
+  data <- bind_rows(liste2[[1]],liste2[[2]],liste2[[3]],liste2[[4]],
+                       liste2[[5]],liste2[[6]],liste2[[7]],liste2[[8]])
+```
+
+
+  
+```{r recode-vars, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}  
+  
+# Recode trust values higher 10 to NA
+  data <- data %>% mutate_at(vars(trust_parliament:trust_un), # recode
+            function(x) ifelse(x > 10, NA, x))
+  table(data$trust_euparliament)
+
+# Age 
+  data <- data %>% 
+          mutate(age = ifelse(age > 123, NA, age))  %>% 
+          mutate(age = ifelse(age < 18, NA, age)) %>%
+          mutate(age_cat = as.numeric(as.character(cut(age, breaks = c(-1, 34, 65, 100.5), labels = c("0", "NA", "1"))))) 
+  #table(data$age, data$age_cat)
+
+# Recode: Respondent’s feelings about the household’s current income 
+  # (perceived higher income [i.e., the respondent reports coping on his or her present income or living comfortably on it] used as reference category versus perceived low income [i.e., the respondent reports finding it difficult or very difficult to cope on his or her present income]);
+  
+  # 1 Living comfortably on present income	
+  # 2	Coping on present income	
+  # 3	Difficult on present income	
+  # 4	Very difficult on present income	
+  data <- data %>% 
+          mutate(hincome_feeling = ifelse(hincome_feeling > 4, NA, hincome_feeling)) %>%
+          mutate(hinc_good = ifelse(hincome_feeling > 2, 0, 1))
+  # table(data$hinc_good, data$hincome_feeling)
+  
+  
+# Employment status
+    # the respondent’s employment status (in paid work or in education as reference 
+    # category versus unemployed, retired or other non-employed);
+  data <- data %>% 
+          mutate(paid_work = ifelse(mainact > 9, NA, mainact))
+  data$paid_work <- as.numeric(dplyr::recode(data$paid_work, 
+                           1 == 1,
+                           2 == 1,
+                           3 == 0,
+                           4 == 0,
+                           5 == NA,
+                           6 == 0,
+                           7 == NA,
+                           8 == NA,
+                           9 == NA))
+  #table(data$mainact, data$paid_work)
+      # 1	Paid work	
+      # 2	Education	
+      # 3	Unemployed, looking for job	
+      # 4	Unemployed, not looking for job	
+      # 5	Permanently sick or disabled	
+      # 6	Retired	
+      # 7	Community or military service	
+      # 8	Housework, looking after children, others	
+      # 9	Other	
+      # 66	Not applicable
+      # 77	Refusal
+      # 88	Don't know
+      # 99	No answer
+  
+  
+  # Education years
+    # 77	Refusal
+    # 88	Don't know
+    # 99	No answer
+  data <- data %>% 
+          mutate(education_years = ifelse(eduyrs > 56, NA, eduyrs)) %>%
+          mutate(education_cat = as.numeric(as.character(cut(education_years, breaks = c(-1, 14.1, 57), labels = c("0", "1")))))
+  table(data$education_years)
+  table(data$education_cat)
+
+  data <- data %>% select(cntry, contains("trust"), age, age_cat, hinc_good, paid_work, education_years, education_cat, year, dweight, pweight)
+  
+  
+  
+  
+
+``` 
+
+
+```{r add-country-names, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
+
+    # SCRAPE COUNTRY CODES FROM WIKIPEDIA
+      # library(rvest)
+      # countrycodes <- html("http://en.wikipedia.org/wiki/ISO_3166-1", encoding = "UTF-8") %>%
+      #   html_nodes(xpath='//*[@id="mw-content-text"]/div/table[2]') %>%
+      #        html_table()
+      # countrycodes <- countrycodes[[1]]
+      # names(countrycodes)[1:2] <- c("country", "cntry")
+      # write.table(countrycodes, "data_countrycodes.csv", sep=",") 
+      countrycodes <- read.csv("data_countrycodes.csv", sep=",")
+      data <- left_join(data, countrycodes, by="cntry", match="all")  
+      data$country <- as.character(data$country)
+      data[data$cntry=="XK","country"] <- "Kosovo"
+      data$country[data$country=="United Kingdom of Great Britain and Northern Ireland"] <- "United Kingdom"
+      names(data) <- str_replace_all(names(data), "\\.", "_")
+      # data <- data %>% rename(links = Link_to_ISO_3166_2_subdivision_codes)
+      # data <- data %>% select(year, cntry, country, contains("trust_eu"))
+
+```
+      
+      
+
+```{r subset-countries, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE} 
+      data <- data %>% filter(country!="Albania",
+                                    country!="Iceland",
+                                    country!="Israel",
+                                    country!="Kosovo",
+                                    country!="Norway",
+                                    country!="Russian Federation",
+                                    country!="Turkey",
+                                    country!="Ukraine")
+```
+
+
+
+
+    
+```{r polarization-overall, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
+library(dplyr)
+      
+      data.agg <- data %>% select(-dweight, -pweight) %>% group_by(year, country) %>% 
+        summarise_at(vars(trust_parliament, trust_legalsystem, trust_police, trust_politicians, trust_euparliament, trust_un), funs(mean, sd, IQR), na.rm = TRUE) %>% # Aggregate
+        mutate_at(c("trust_parliament_sd", "trust_legalsystem_sd", "trust_police_sd", "trust_politicians_sd", "trust_euparliament_sd", "trust_un_sd"), .funs = funs("2" = . * 2)) %>% # SD * 2
+        mutate(trust_parliament_pol = (trust_parliament_sd_2*trust_parliament_IQR)/10) %>% # Polarization index
+        mutate(trust_legalsystem_pol = (trust_legalsystem_sd_2*trust_legalsystem_IQR)/10) %>% # Polarization index
+        mutate(trust_police_pol = (trust_police_sd_2*trust_police_IQR)/10) %>% # Polarization index
+        mutate(trust_politicians_pol = (trust_politicians_sd_2*trust_politicians_IQR)/10) %>% # Polarization index
+        mutate(trust_euparliament_pol = (trust_euparliament_sd_2*trust_euparliament_IQR)/10) %>% # Polarization index
+        mutate(trust_un_pol = (trust_un_sd_2*trust_un_IQR)/10) # Polarization index
+      
+
+
+    # Write table
+      write.table(data.agg, "ESS_aggregated_long.csv", row.names=FALSE, sep=",")
+      write_dta(data.agg, "ESS_aggregated_long.dta")
+      
+      
+# Create wide format
+      esswide <- data.agg %>% gather(key = variable,
+                        value = values,
+                        -year,
+                        -country) %>% 
+              unite(variable_time, variable, year, sep = "_") %>%
+              spread(key = variable_time, value = values)
+      
+    # store wideformat
+      write.table(esswide, "ESS_aggregated_wide.csv", row.names=FALSE, sep=",")
+      write_dta(esswide, "ESS_aggregated_wide.dta") 
+```
+
+
+
+
+
+
+
+
+
+
+
+\setlength{\tabcolsep}{2pt}
+
+# To-do
+* Make a map showing all European countries (see pol. of human values)
+
+# Introduction
+A healthy and stable democracy requires a basic level of trust in its political institutions (Warren 1999). Political trust is not only "essential to a democratic community's well-being" (Mara 2001, 820) and for individuals' willingness to engage in collective actions (Hardin 1999), but also for the implementation of public policies, especially "when government programs require people to make sacrifices" (Hetherington 2005: 4). Given the central role of trust in assuring the legitimacy of democratic systems (van der Meer 2010, 518), it is therefore not surprising that scholars have raised concerns about a generalized decline of trust in democratic institutions across the Western world in recent decades (Dalton 2004; Norris 1999; Pharr & Putnam 2000).
+Trust may be particularly crucial to guarantee the legitimacy of relatively "young institutions" such as the European Union (in comparison to most nation states), especially if they need to challenge a supposed democratic deficit, as some scholars have argued in relation to the EU (see for example Follesdal & Hix 2006). Although support for the EU has remained relatively stable since the mid-1990s (Hix 2008), recent studies have shown that citizens' confidence in the functioning of different European institutions has declined as a consequence of the 2008 economic crisis (Dotti Sani & Magistro 2016; Ehrmann et al. 2013; Roth et al. 2013; Armingeon & Ceka 2014; Armingeon & Guthmann 2014). Support for the EU has decreased both as a direct consequence of a series of anti-crisis policy measures adopted by European institutions, and as an indirect consequence of a general decline in support for national government (Armingeon & Ceka 2014).
+Yet, despite growing evidence of a decline of support for European institutions, current research has not considered whether heterogeneous changes in trust in the EU might have occurred across individuals and countries over time. Since the literature so far has focused only on shifts in average levels of trust, we do not know whether the distribution of trust levels across countries and individuals has also significantly changed in response to the economic crisis. An important exception in this sense is a recent study by Dotti Sani and Magistro (2016), in which they investigate whether the economic crisis led to "a growing gap" in trust in the European Parliament (EP). Their findings indicate that support for the EP declined mostly in the countries that were hit the most by the crisis, and that "subjects from the lower positions in the social ladder . lost more trust in the EP compared to those who are better off" (Dotti Sani & Magistro 2016: 260).      
+Building on this background, we pursue the following questions: How polarized is political trust across European member states?  
+
+
+in this study we aim to shed light on how trust in the European Parliament has changed over time across individuals of different European member states. In addition to considering average changes over time, we analyze changes in the distribution of trust levels in the population, in order to identify whether and how trust in the EP has polarized as a consequence of the economic crisis. Since the crisis has not equally hit citizens from different European countries and from different social strata, we expect that trust in the EP has not only declined after the economic crisis, but has also polarized, especially in the countries that suffered a stronger economic downturn. We argue that focusing on the distribution of trust is as equally important has focusing on average levels, especially if a decline in trust is accompanied by increasing polarization, which, in turn, might lead to increasing conflict and political instability (Esteban and Schneider 2006). This promising change of focus from averages to variances or other measures of spread is generally rarely done within quantitative research (??). Specifcally this gap has also been pointed to within research on trust and social capital (?: 91,122).
+Besides providing novel evidence regarding political trust and support for the European Union, we contribute to the theoretical debate on how to define and measure polarization. We broadly define a process of polarization as a situation in which individuals' positions on one or several scales are increasingly separated over time. The nature of this separation, i.e. to what extent different characteristics of a distribution reflect the idea of polarization is still subject to debate [@Bauer2018-ti, 1]. Likewise, scholars are still somewhat unsure about the extent of polarization with regard to different phenomena, among other things also political trust [e.g. @Hetherington2014-dg; @Hetherington2015-cd]. 
+To our knowledge there is no empirical study that takes stock of the polarization of trust across countries across time. We do so by analyzing eight waves of the European Social Survey. Moreover, analyzing polarization challenges existing theory to explain not only average differences between countries but also differences in the within-heterogeneity of countries. Thus, besides a purely descriptive endeavor we make a theoretical contribution by developing explanations of why some countries are more polarized then others. Subsequently, we test these various explanations empirically.     
+Our findings show that.
+We proceed as follows: Section [2](#sec:theory) discusses how one may conceptualize and measure the polarization of political trust. Section [3](#sec:data) presents the design, data and measures. Section [4](#sec:results) summarizes the results. Section [5](#sec:conclusion) provides a summary, discusses limitations and provides rationales for future research.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Investigating this question contributes to a vivid area of research within comparative politics that investigates political trust across countries (Sources?). We broadly define a process of polarization as a situation in which individuals’ positions on one or several scales are increasingly separated over time. The nature of this separation, i.e. to what extent different characteristics of a distribution reflect the idea of polarization is still subject to debate [@Bauer2018-ti, 1]. Likewise, scholars are still somewhat unsure about the extent of polarization with regard to different phenomena, among other things also political trust [e.g. @Hetherington2014-dg; @Hetherington2015-cd]. We contribute to current scholarship in different ways.       
+First, we provide the first descriptive overview of the polarization of political trust in Europe. In general, comparative research to this date has overlooked the fact that trust does not spread uniformly across societies. Rather trust is unevenly distributed between segments of societies (?: 171). This promising change of focus from averages to variances or other measures of spread is generally rarely done within quantitativ research (??). Specifcally this gap has also been pointed to within research on trust and social capital (?: 91,122). Focusing on polarization informs us about differences between populations that are generally overseen when studying means. To our knowledge there is no empirical study that takes stock of the polarization of trust across countries across time. We do so by analyzing eight waves of the European Social Survey. Moreover, analyzing polarization challenges existing theory to explain not only average differences between countries but also differences in the within-heterogeneity of countries. Thus, besides a purely descriptive endeavor we make a theoretical contribution by developing explanations of why some countries are more polarized then others. Subsequently, we test these various explanations empirically.     
+Second, we discuss some of the challenges when it comes to measuring the polarization of trust. Thereby, we also discuss what those results actually mean...
+
+
+We proceed as follows: Section [2](#sec:theory) discusses how one may conceptualize and measure the polarization of political trust. Section [3](#sec:data) presents the design, data and measures. Section [4](#sec:results) summarizes the results. Section [5](#sec:conclusion) provides a summary, discusses limitations and provides rationales for future research.
+
+
+
+
+
+# Conceptualizing and measuring the polarization of trust {#sec:concept}
+"Broadly speaking, the level of polarization describes to what degree individuals' positions on one or several scales are separated. A process or trend of (de-)polarization describes how the level of polarization changes over time. However, the nature of this separation, i.e. to what extent different characteristics of a distribution reflect the idea of polarization is still subject to debate, a debate that is linked to the scale(s) that underly one's concept of polarization. Scholars arrive at different conclusions regarding the levels and trends of polarization of different phenomena and polarization's impact on other phenomena (e.g. violence) and are also critical of certain measures [see e.g. @Downey2001-dg]. In  part, such differing conclusions are caused by the use of different conceptualizations or measures of polarization." [@Bauer2018-ti]
+In this paper we pursue two notions and corresponding measures of polarization. The first notion is that polarization is higher as more individuals have diverging, more extreme positions. From a distributional perspective individuals would be more dispersed on a scale. We use this notion to gauge the overall polarization across countries and use the variance as a concrete measure [cf. @DiMaggio1996-pr]:
+
+$${\displaystyle v_{tc}={\frac {1}{n_{ct}}}\sum \limits _{i=1}^{n_{ct}}\left(x_{cit}-{\overline{x_{ct}}}\right)^{2}}$$
+
+where $v_{tc}$ is the country-year value of the variance of trust in the European Parliament, $x_{cit}$ is an individual $i$'s level of trust in country $c$ at time $t$, $\overline{x_{ct}}$ is the respective country average at time $t$, and $n_{ct}$ is the sample size (number of individuals) we have for country $c$ at time $t$.    
+While a crude measure, the variance convinces through it's intepretational simplicity. The more individuals have positions far from a sample's mean the higher the level of polarization. Since the distance is squared, those far from the mean $\overline{x_{ct}}$ carry more weight.     
+The second notion is linked to the idea of clusters in a distribution. Generally, polarization increase as the within-cluster distance decreases while the between-cluster distance increases. We apply this notion to test the overall polarization is potentially linked to more extreme positions of certain subgroups we employ a measure of between-group polarization introduce by @Esteban1994-ai to which we refer as *er index*. @Esteban1994-ai formally derive a polarization measure for discrete distributions: 
+
+$$P(\pi,\mathbf{y}) = \sum_{i = 1}^{n} \sum_{j = 1}^{n}\pi_{i}\pi_{j}\mathbf{T}(\mathbf{I}(\pi_{i}),a(\delta(y_{i}, y_{j})))$$
+
+Conceptually, $P$ depends on *identification* $\mathbf{I}$ which is a function of individual i's group size $\pi_{i}$. Identification reflects the idea that an individual feels a sense of identification with others in the group, a sense that increases with the number of individuals in this group (reflected by $\pi_{i}$). $P$ also depends on *alienation* $a(\delta(y_{i}, y_{j}))$ where $\delta(y_{i}, y_{j})$ simply describes the absolute distance between two individuals $i$ and $j$. The *effective antagonism* is given by a cardinal function $T(\mathbf{I},a)$ that combines both identification and alienation.
+The choice of $\mathbf{I}(\dot)$, $a(\dot)$ and $\mathbf{T}(\dot)$ will yield a particular measure of polarization:
+
+$$P^{*}(\pi,\mathbf{y}) = K \sum_{i = 1}^{n} \sum_{j = 1}^{n}\pi_{i}^{1+\alpha}\pi_{j}|y_{i} - y_{j}|$$
+where K is a multiplicative constant that is used for normalization, and $\alpha$ restricts identification function to the form $p^\alpha$ where $\alpha > 0$. As $\alpha$ goes to zero $P$ approximates the Gini coefficient (defined on log incomes). $\pi$ is a vector of shares and $\mathbf{y}$ is a vector of means. $y_{i}$ and $y_{j}$ are the means in the respective groups and $\pi_{i}$ and $\pi_{j}$ are the proportions of observations in those groups. The choice of groups is a exogenous process and we'll discuss which subgroups we investigate in the next section. 
+
+
+
+
+
+
+* Check out recent papers/measures by 
+    + @Kleiner2018-uz
+    + @Kleiner2016-dk
+
+Various measures of polarization have been proposed during recent years. Importantly, some are more, some a less amenable to our application. In the present study trust is measured on 11-point scales going from "0 - No trust at all" to "10 - complete trust". For those scales we can assume the a interval measurement level.
+
+
+Although the theoretical definition of polarisation provided so far seems straightforward, its practical application proves complicated. The key problem lies in the fact that there is no hierarchical relation between the two parameters of dispersion and bimodality. Thus, in the case of a distribution that is more dispersed but less bimodal than another distribution, it is hard to define which distribution is more polarised. A technical solution could be developing a single index of polarisation, by combining the statistical measures of variance and kurtosis, which, according to the literature (DiMaggio et al., 1996; Baldassarri and Bearman, 2007), respectively capture the dimensions of dispersion and bimodality. However, the indexes proposed so far do not seem satisfactory or suitable for the field of public opinion. In addition, the parameter of kurtosis suffers from severe limitations especially in the case of small samples (DeCarlo, 1997).
+A concrete example concerning the traditionally polarised issue of abortion can help clarify these problems. As a starting point, we can think of a society that is sharply divided into two groups with opposing but at the same time moderate views on the issue of abortion. At Time 1, therefore, both groups agree that in certain cases abortion could be either allowed or forbidden. Imagine that subsequently the issue of abortion becomes salient in the public debate because, for example, a new law is about to be approved. The result can be that at Time 2 a number of individuals shift towards more radical opinions both in favour and against abortion (thus opinions become more dispersed), but at the same time individuals might cluster into several smaller groups (thus the distribution of opinions becomes less bimodal). Unless a single index is developed, we can hardly define whether the distribution of opinions at Time 2 is more or less polarised than the distribution at Time 1.
+
+
+
+# Theory and hypotheses: Winner's and looser's {#sec:theory}
+We investigate both overal polarization and between-subgroup polarization with regard to trust in the EU. There is ample evidence show that trust in EU institutions has declined in recent years. Various accounts that differ in terms of complexity theorize this development. While the decline of overall levels of trust in the EU is at least to some extent a result of the politics of EU institutions, e.g. the economic crisis and the austerity policies that the EU imposed—in tandem with the IMF—on several member countries [@Armingeon2014-ut] one of the most important determinants of trust in EU institutions are evaluation of national-level institutions. 
+
+
+
+
+@Armingeon2014-ut 
+
+
+
+How can we explain the decline in support for the European Union (EU) and the idea of European integration after the onset of the great recession in the fall of 2007? Did the economic crisis and the austerity policies that the EU imposed—in tandem with the IMF—on several member countries help cause this drop? While there is some evidence for this direct effect of EU policies, we find that the most significant deter- minant of trust and support for the EU remains the level of trust in national govern- ments. Based on cue theory and using concepts of diffuse and specific support, we find that support for the EU is derived from evaluations of national politics and policy, which Europeans know far better than the remote political system of the EU. This effect, however, is somewhat muted for those sophisticated Europeans that are more know- ledgeable about the EU and are able to form opinions about it independently of the national contexts in which they live. We also find that the recent economic crisis has led to a discernible increase in the number of those who are disillusioned with politics both at the national and the supranational level. We analyze 133 national surveys from 27 EU countries by estimating a series of cross-classified multilevel logistic regression models
+
+To start we *hypothesize that the overal level of polarization of trust in the EU parliament has increased, i.e. there is a positive trend in the level of polarization (H1)*. This overall increase in polarization will most certainly be due to heavy increases in particular countries and underlying heterogeneity that we attempt to show and visualize.          
+In what regard within county-between-subgroup polarization, that is the question between which societal subgroups, polarization increased the strongest. 
+
+
+
+among which subgroups polarization  it is harder to make clear theoretical predictions and hypotheses.
+
+
+
+
+
+
+acrossexpect to find that the overall of polarization has increased across 
+
+
+with differing complexity theorize this development of trust decline. Some 
+
+
+and this development has been convincinlgy theorized.
+
+
+Not much theorizing is required when it comes overall levels and trends of EU trust. It is to be assumed.
+
+
+
+
+There is ample evidence 
+* Explanation of overall trend
+
+
+
+
+
+In our analysis we contrast the following groups: Low education (<12 years) vs. high education (>12 years), struggling with income (Difficult on present income + Very difficult on present income) vs. not struggling with income (Living comfortably on present income + Coping on present income), unemployed/retired/non-employed vs. in education/paid work, younger (<34) vs. older (>65). 
+
+
+
+
+# Data, models and further measures {#sec:data}
+We rely on data from 8 waves of the European Social Survey for the years ```r seq(2002, 2016, 2)```. Not all EU member states were observed across the full time span. The question we focus on is the following:
+
+*Using this card, please tell me on a score of 0-10 how much you personally trust each of the institutions I read out. 0 means you do not trust an institution at all, and 10 means you have complete trust. Firstly...* And we are interested in respondents' jugments of *the European Parliament*.
+
+We calculate both overall polarization, as well as, between-group polarization across countries across time as outlined in Section  \@ref(sec:concept). Hence, we are able to estimate time trends for both. Corresponding to those two measures we have several outcome variables, one for the overall polarization levels and several more corresponding to between-subgroup polarization of different subgroups. The variables contain year-country specific values of both overall polarization as well as between group polarization.      
+The groups we define for between subgroup polarization are age, the extent to which they can live comfortably with their income, employment status, education years and party id (can we compare countries with different numbers of parties?).      
+To estimate trends, we use time as a explanatory variable (going from 2002 - 2016) and rescale this variable so that it centers at 2009. We start with Model A that is specified as follows: 
+
+$$y_{it} = \alpha + \beta \times time + \epsilon_{t}$$
+
+where $y_{it}$ represents the level of polarization in a particular country $i$ at time $t$, $\beta$ the coefficient of time, i.e. by how much trust or the polarization of trust increases per year and errors $\epsilon_{it}$ (deviations from our model) that are assumed to follow a normal distribution.
+
+Implementing a multilevel approachserves at least two purposes. First, the estimation of some trends may be unstable,especially when a specific pair of issues is only observed for a few years. The varying-intercept, varying-slope approach allows us to explicitly capture this uncertainty in theestimates. Secondly, simply estimating an overall trend is only the first step of ouranalysis. In order to obtain a finer-grained picture of POP trends, we are also interested inlooking at issue-dimension-specific correlation trends. The estimated variation in themultilevel models gives us exactly this kind of information.While Model A provides an estimate for the overall trend of POP (the averageofbpacross all pairs,bp!b) and issue-pair-specific trends, we respecify the basic modelin several ways. In Model B, we estimate trends of attitude scale pairs that are locatedwithin or between issue dimensions. More precisely, it allows us to evaluate separatetrends for within-dimension attitude scale pairs and between-dimension attitude scalepairs. Here, the time trend variable is interacted with a dummy variable that indicateswhether the two attitude scales belong to the same or different issue dimensions. Thus wecan determine whether attitude alignment between attitude scales belonging to a certaindimension has risen more than alignment between attitude scales that belong to twodifferent dimensions. Model C introduces four groups that correspond to the three issuedimensions and a group for cross-dimension pairs (that is, the group of attitude scalepairs that do not belong to the same dimension). As ever,rptis the correlation of a pair ofattitude scales at pointtin time and the group level is a specific pair. The trend term is now interacted with a variable that indicates the attitude scale pairs belonging to a certainissue dimension.When moving to the sub-group analyses, we simply divide the sample of respondentsaccording to certain characteristics (gender, education level, income, political interest,religious denomination and East versus West). Statistically, the models follow the knownspecification.
+
+
+
+
+
+
+
+
+
+
+
+# Empirical results {#sec:results}
+
+## Averages and polarization of trust: Levels and trends
+
+Figure \ref{fig:fig-alldata} visualizes all our data points namely trust averages across countries (mean) and trust polarization levels across countries. As is visible in Figure \ref{fig:fig-alldata} trust means range from `r paste(data.agg %>% ungroup() %>% dplyr::select(trust_euparliament_mean, country, year)  %>% arrange(trust_euparliament_mean) %>% mutate_at(1, round, 2) %>% slice(1) %>% as.character(), collapse = ", ")` to `r paste(data.agg %>% ungroup() %>% dplyr::select(trust_euparliament_mean, country, year) %>% arrange(desc(trust_euparliament_mean)) %>% mutate_at(1, round, 2) %>% slice(1) %>% as.character(), collapse = ", ")`. Trust polarization ranges from `r paste(data.agg %>% ungroup() %>% dplyr::select(trust_euparliament_sd, country, year)  %>% arrange(trust_euparliament_sd) %>% mutate_at(1, round, 2) %>% slice(1) %>% as.character(), collapse = ", ")` to `r paste(data.agg %>% ungroup() %>% dplyr::select(trust_euparliament_sd, country, year) %>% arrange(desc(trust_euparliament_sd))%>% mutate_at(1, round, 2)  %>% slice(1) %>% as.character(), collapse = ", ")`. Figure \ref{fig:fig-alldata} illustrates there there is not only variation across countries (both in terms of average trust and polarization) but also across time.
+
+
+```{r fig-alldata, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7, fig.height=9, fig.cap="European parliament: Level and polarization of trust across time\\label{fig:fig-alldata}", fig.align="H"}
+      library(dplyr)
+
+      vars <- "trust_euparliament_mean"
+      vars2 <- "trust_euparliament_sd"
+
+      
+      # VERY STRANGE GRAPH FOR trust_un_pol
+      # data.agg.tmp <- data.agg %>% ungroup() %>% arrange((!!rlang::sym("trust_euparliament_mean")))
+      
+      data.agg.tmp <- data.agg %>% ungroup() %>% arrange(trust_euparliament_mean)
+
+      
+            tmp <- data.frame(country=unique(data.agg.tmp$country),rank=1:28) # generate rank vector
+      data.agg.tmp$rank <- tmp$rank[match(data.agg.tmp$country,tmp$country)] # add rank vector to data.agg.tmp    
+      data.agg.tmp <- arrange(data.agg.tmp, rank)                 # order rank then year
+      
+      #pdf(paste("distributions", "_descriptive.pdf", sep=""), width=7,height=9)
+      par(mfrow=c(1,2), mar = c(3,8,1,0), oma = c(0,0,0,2))
+      countries <- unique(data.agg.tmp$country)
+      yrange <- c(1,length(countries))
+      # 
+      xrange <- c(1,7)
+      plot(xrange, yrange, type="n", xlab="", ylab="", xlim=xrange, xaxt='n', yaxt="n")
+      mtext(paste("Mean [mean]: \n", "trust_euparliament_mean", sep=""), side = 1, line = 2, cex=.8)
+      axis(1, at=seq(0,10,1), cex.axis=.8, tck=-0.01, labels = NA)
+      axis(side = 1, at=seq(0,10,1), lwd = 0, line = -.7, cex.axis=.8)
+      axis(3, at=seq(0,10,1), cex.axis=.8)
+      colors <- rep(c("#ca0020", "#0571b0", "#a6611a", "#404040"), 10) # "#d7191c", "#fdae61", "#a6d96a", "#1a9641"
+      axis(2, at=c(1:length(countries)),labels=FALSE, cex.axis=.8, las=1, col.axis="black")  
+      z <- 1
+      abline(h=1:35, lty=2, col="gray")
+      abline(v=1:10, lty=2, col="gray")    
+      for(i in countries){
+      tmp.data.agg <- data.agg.tmp[data.agg.tmp$country==i,]  
+      points(pull(tmp.data.agg[,"trust_euparliament_mean"]), (z+(as.numeric(as.character(tmp.data.agg$year))-2000)/20)-.3, type="b", lwd=1.5, lty=1, col=colors[z], pch=1, cex=.6)  
+      z <- z+1
+      }
+      arrows(6, 0.5, 6,1.5, length=.07)
+      text(6.5, 0.5, "2002", cex=.5)
+      text(6.5, 1.5, "2016", cex=.5)
+      text(labels=unique(data.agg.tmp$country), col=colors, x=rep(-0.5,length(unique(data.agg.tmp$country))),y=1:length(unique(data.agg.tmp$country)), srt = 0, pos = 2, xpd = TRUE, cex=.8)
+      xrange <- c(0,4)
+      par(mar = c(3,1,1,4))
+      plot(xrange, yrange, type="n", xlab="", ylab="", xlim=xrange, xaxt='n', yaxt="n")   
+      axis(1, at=seq(0,10,1), cex.axis=.8, tck=-0.01, labels = NA)
+      axis(side = 1, at=seq(0,10,1), lwd = 0, line = -.7, cex.axis=.8)
+      axis(3, at=0:10, labels=0:10, cex.axis=.8)
+      # axis(2, at=c(1:length(countries)),labels=FALSE, cex.axis=.8, las=1, col.axis="black")  
+      z <- 1
+      abline(h=1:35, lty=2, col="gray")
+      abline(v=seq(1,10,1), lty=2, col="gray")    
+      for(i in countries){
+        tmp.data.agg <- data.agg.tmp[data.agg.tmp$country==i,]  
+        points(pull(tmp.data.agg[,"trust_euparliament_pol"]), (z+(as.numeric(as.character(tmp.data.agg$year))-2000)/20)-.3, type="b", lwd=1.5, lty=1, col=colors[z], pch=1, cex=.6)  
+        z <- z+1
+      }
+      mtext(paste("Polarization [SD]: \n", "trust_euparliament_sd", sep=""), side = 1, line = 2, cex=.8)
+
+      # text(labels=unique(data.agg$country), col=colors, x=rep(-.5,length(unique(data.agg$country))),y=1:length(unique(data.agg$country)), srt = 0, pos = 2, xpd = TRUE)
+      # savePlot(filename="ess_descriptive.pdf", type="pdf")
+      #dev.off()     
+```      
+      
+
+
+
+
+Table \@ref(tab:trust-trends) displays the estimates a very simple linear regression model to illustrate display the time trend. If shows there there is both an a deacrease in the overall average of trust, as well as an increase in the overall polarization of trust across countries.
+
+
+
+```{r model-time-trend, echo=FALSE, message=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+data.agg$year <- as.numeric(data.agg$year)
+fit1 <- lm(trust_euparliament_mean ~ year + as.factor(country), data = data.agg)
+fit2 <- lm(trust_euparliament_mean ~ year + as.factor(country), data = data.agg)
+
+fit3 <- lm(trust_euparliament_sd ~ year + as.factor(country), data = data.agg)
+fit4 <- lm(trust_euparliament_sd ~ year + as.factor(country), data = data.agg)
+
+
+stargazer(fit1, fit2, fit3, fit4,
+          type="latex", 
+          title = "Time trend: Trust EU Parliament",
+          omit.stat=c("LL","ser","f","adj.rsq"), 
+          omit = c("country"),
+          dep.var.caption = "Outcome: Trust EU Parliament",
+          dep.var.labels = c("Mean", "Sd."),
+          ci=FALSE, digits=2, 
+          ci.level=0.95,
+          single.row=FALSE, 
+          label = "tab:trust-trends", 
+          table.placement="H", 
+          column.sep.width = "-7pt",
+          align = TRUE,
+          column.labels = c("M1", "M2", "M3", "M4", "M5", "M6", "M7"),
+          model.names = FALSE,
+          model.numbers = FALSE,
+          star.cutoffs = c(0.05, 0.01, 0.001),
+          notes = "* Data: European Social Survey; Country fixed-effects ",
+          header=FALSE,
+          no.space=TRUE,
+          font.size = "footnotesize"
+          )
+```
+
+
+Figure \ref(fig:fig-timetrends) visualizes time trends in the data. Estimate a multilevel model... 
+
+```{r fig-time-trends, eval=FALSE, fig.align="H", fig.cap="Time trends of polarization\\label{fig:fig-timetrends}", message=FALSE, warning=FALSE, include=FALSE}
+library(plotly)
+
+data.lineplot <- data.agg %>% group_by(country) %>% 
+  arrange(country, year) %>%
+    mutate(max_mean = max(trust_euparliament_mean),
+           min_mean = min(trust_euparliament_mean),
+           max_sd = max(trust_euparliament_sd),
+           min_sd = min(trust_euparliament_sd),
+           first_mean = first(trust_euparliament_mean),
+           last_mean = last(trust_euparliament_mean),
+           first_sd = first(trust_euparliament_sd),
+           last_sd = last(trust_euparliament_sd),
+           diff_mean =  first_mean - last_mean,
+           diff_sd =  first_sd - last_sd,
+           diff_mean_groups = cut(diff_mean, 
+                                  breaks = 
+                                     quantile(diff_mean, c(0, 0.05, 0.2, 0.4, 0.6, 0.8, 0.95, 1)), 
+                                  labels = as.character(0:6)),
+           diff_sd_groups = cut(diff_sd, breaks = c(-1, -0.14956, -0.07142, 0.07580, 5), labels = c("0", "1", "2", "3"))) 
+
+
+
+
+
+p1 <- plot_ly(data.lineplot, 
+             x = ~year, 
+             y = ~trust_euparliament_mean, 
+             type = 'scatter', 
+             mode = 'lines',
+             color = ~country) %>% 
+  layout(yaxis = list(range = c(0,10), title = "Trust: EU parliament"),
+         xaxis = list(title = "year"))
+
+p2 <- plot_ly(data.lineplot, 
+             x = ~year, 
+             y = ~trust_euparliament_pol, 
+             type = 'scatter', 
+             mode = 'lines',
+             color = ~country) %>% 
+  layout(yaxis = list(range = c(0,10), title = "Trust polarization: EU parliament"),
+         xaxis = list(title = "year"))
+
+p.sm <- subplot(p1, p2, nrows=1, shareX = FALSE, shareY = FALSE,
+                titleX = T, titleY = T, margin = 0.05)  %>%
+  layout(showlegend = FALSE, autosize = T, height = 400, width = 800)
+p.sm
+```
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(plotly)
+export(p.sm, file = "fig-time-trends.pdf", 
+        zoom = 0.6
+        )
+export(p.sm, file = "fig-time-trends.png", 
+        cliprect = c(60, 60, 1000, 1000)
+        #, zoom = 2
+        )
+```
+
+```{r fig-time-trends2, eval=FALSE, fig.align="H", fig.cap="Time trends of polarization\\label{fig:fig-timetrends-groups}", message=FALSE, warning=FALSE, include=FALSE}
+
+data.lineplot.agg <- data.lineplot %>% group_by(year, diff_mean_groups) %>% 
+        summarise_at(vars(trust_euparliament_mean), funs(mean, sd), na.rm = TRUE) %>% arrange(diff_mean_groups, year) %>% ungroup()
+
+
+
+p1 <- plot_ly(data.lineplot.agg, 
+             x = ~year, 
+             y = ~mean, 
+             type = 'scatter', 
+             mode = 'lines',
+             color = ~diff_mean_groups,
+             linetype = ~diff_mean_groups) %>% 
+  layout(yaxis = list(range = c(2,8), title = "Trust  mean: EU parliament"),
+         xaxis = list(title = "year"))
+
+p2 <- plot_ly(data.lineplot.agg, 
+             x = ~year, 
+             y = ~sd, 
+             type = 'scatter', 
+             mode = 'lines',
+             color = ~diff_mean_groups,
+             linetype = ~diff_mean_groups) %>% 
+  layout(yaxis = list(range = c(0,2), title = "Trust polarization: EU parliament"),
+         xaxis = list(title = "year"))
+
+p.sm <- subplot(p1, p2, nrows=1, shareX = FALSE, shareY = FALSE,
+                titleX = T, titleY = T, margin = 0.05)  %>%
+  layout(showlegend = FALSE, autosize = T, height = 400, width = 800)
+p.sm
+```
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(plotly)
+export(p.sm, file = "fig-time-trends.pdf", 
+        zoom = 0.6
+        )
+export(p.sm, file = "fig-time-trends.png", 
+        cliprect = c(60, 60, 1000, 1000)
+        #, zoom = 2
+        )
+```
+
+
+## Between-group polarization: Levels and trends
+
+Analogue to @Lelkes2016-bk, @Levendusky2011-ax and @Schmid2006-jn we rely on the overlap coefficent to measure between group polarization. Below we divide the sample into the following groups...
+
+
+
+
+```{r compare-overlap-overlapping-package, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="asis"}
+# https://stats.stackexchange.com/questions/97596/how-to-calculate-overlap-between-empirical-probability-densities
+
+library(overlap)
+# Examples with own data
+    a <- data %>% filter(country == "Germany", age_cat == 0, year == 2002) %>% select(trust_euparliament) %>% na.omit() %>% pull()
+    b <- data %>% filter(country == "Germany", age_cat == 1, year == 2002) %>% select(trust_euparliament) %>% na.omit() %>% pull() 
+    
+    
+# OVERLAP PACKAGE
+
+  # To use overplapTrue(){overlap} the scale must be in radian (i.e. 0 to 2pi)
+  # To keep the *relative* value of a and b the same, combine a and b in the
+  # same dataframe before rescaling. You'll need to load the ‘scales‘ library.
+  # But first add a "Source" column to be able to distinguish between a and b
+  # after they are combined.
+   a = data.frame( value = a, Source = "a" )
+   b = data.frame( value = b, Source = "b" )
+   d = rbind(a, b)
+   library(scales) 
+   d$value <- rescale( d$value, to = c(0,2*pi) )
+  
+  # Now you can created the rescaled a and b vectors
+   a <- d[d$Source == "a", 1]
+   b <- d[d$Source == "b", 1]
+  
+  # You can then calculate the area of overlap as you did previously.
+  # It should give almost exactly the same answers.
+  # Or you can use either the overlapTrue() and overlapEst() function 
+  # provided with the overlap packages. 
+  # Note that with these function the KDE are fitted using von Mises kernel.
+   library(overlap)
+    # Using overlapTrue():
+     # define limits of a common grid, adding a buffer so that tails aren't cut off
+       lower <- min(d$value)-1 
+       upper <- max(d$value)+1
+     # generate kernel densities
+       da <- density(a, from=lower, to=upper, adjust = 1)
+       db <- density(b, from=lower, to=upper, adjust = 1)
+     # Compute overlap coefficient
+       overlapTrue(da$y,db$y)
+  
+  
+    # Using overlapEst():            
+      overlapEst(a, b, kmax = 3, adjust=c(0.8, 1, 4), n.grid = 500)
+  
+  # You can also plot the two KDEs and the region of overlap using overlapPlot()
+  # but sadly I haven't found a way of changing the x scale so that the scale 
+  # range correspond to the initial x value and not the rescaled value.
+  # You can only change the maximum value of the scale using the xscale argument 
+  # (i.e. it always range from 0 to n, where n is set with xscale = n).
+  # So if some of your data take negative value, you're probably better off with
+  # a different plotting method. You can change the x label with the xlab
+  # argument.  
+    overlapPlot(a, b, xscale = 10, xlab= "x metrics", rug=T)
+    
+  
+  
+# OVERLAPPING PACKAGE
+  
+  library(overlapping)
+
+  # Overlapping package
+    x <- list(trust.old = a,
+              trust.young = b)
+  
+    overlap(x, nbins = 1000, plot = TRUE, partial.plot = TRUE)
+  
+```
+
+
+```{r overlap-coefficient, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="asis"}
+
+
+library(overlapping) # or try overlap package
+
+# Variables 
+  # age_cat, hinc_good, paid_work, education_cat
+
+# age_cat
+  list <- data %>% split(.,list(.$country,.$year,.$age_cat), drop = TRUE)
+  for(i in 1:length(list)){
+    list[[i]] <- list[[i]][,4] # Only keep trust variable in list
+    list[[i]] <- list[[i]][!is.na(list[[i]])] # remove missings
+    }
+  loop.is <- sub('\\.([^\\.]*)$', '', names(list))
+  list.OV <- NULL
+  for(z in loop.is){
+    tmp <- list(trust.group0 = list[[paste(z, ".0", sep = "")]],
+                  trust.group1 = list[[paste(z, ".1", sep = "")]])
+    list.OV[[z]] <- overlap(tmp, nbins = 1000, plot = FALSE, partial.plot = FALSE)$OV
+    }
+   results_age_cat <- data.frame(country = str_extract(names(list.OV), "[^\\.]+"),
+                         year = str_extract(names(list.OV), "[0-9][0-9][0-9][0-9]"),
+                         OV_age_cat = list.OV)
+   
+
+   
+# hinc_good
+  list <- data %>% split(.,list(.$country,.$year,.$hinc_good), drop = TRUE)
+  for(i in 1:length(list)){
+    list[[i]] <- list[[i]][,4] # Only keep trust variable in list
+    list[[i]] <- list[[i]][!is.na(list[[i]])] # remove missings
+    }
+  loop.is <- sub('\\.([^\\.]*)$', '', names(list))
+  list.OV <- NULL
+  for(z in loop.is){
+    tmp <- list(trust.group0 = list[[paste(z, ".0", sep = "")]],
+                  trust.group1 = list[[paste(z, ".1", sep = "")]])
+    list.OV[[z]] <- overlap(tmp, nbins = 1000, plot = FALSE, partial.plot = FALSE)$OV
+    }
+   results_hinc_good <- data.frame(country = str_extract(names(list.OV), "[^\\.]+"),
+                         year = str_extract(names(list.OV), "[0-9][0-9][0-9][0-9]"),
+                         OV_hinc_good = list.OV)
+   
+   
+# paid_work
+  list <- data %>% split(.,list(.$country,.$year,.$paid_work), drop = TRUE)
+  for(i in 1:length(list)){
+    list[[i]] <- list[[i]][,4] # Only keep trust variable in list
+    list[[i]] <- list[[i]][!is.na(list[[i]])] # remove missings
+    }
+  loop.is <- sub('\\.([^\\.]*)$', '', names(list))
+  list.OV <- NULL
+  for(z in loop.is){
+    tmp <- list(trust.group0 = list[[paste(z, ".0", sep = "")]],
+                  trust.group1 = list[[paste(z, ".1", sep = "")]])
+    list.OV[[z]] <- overlap(tmp, nbins = 1000, plot = FALSE, partial.plot = FALSE)$OV
+    }
+   results_paid_work <- data.frame(country = str_extract(names(list.OV), "[^\\.]+"),
+                         year = str_extract(names(list.OV), "[0-9][0-9][0-9][0-9]"),
+                         OV_paid_work = list.OV)   
+   
+   
+# education_cat
+  list <- data %>% split(.,list(.$country,.$year,.$education_cat), drop = TRUE)
+  for(i in 1:length(list)){
+    list[[i]] <- list[[i]][,4] # Only keep trust variable in list
+    list[[i]] <- list[[i]][!is.na(list[[i]])] # remove missings
+    }
+  loop.is <- sub('\\.([^\\.]*)$', '', names(list))
+  list.OV <- NULL
+  for(z in loop.is){
+    tmp <- list(trust.group0 = list[[paste(z, ".0", sep = "")]],
+                  trust.group1 = list[[paste(z, ".1", sep = "")]])
+    list.OV[[z]] <- overlap(tmp, nbins = 1000, plot = FALSE, partial.plot = FALSE)$OV
+    }
+   results_education_cat <- data.frame(country = str_extract(names(list.OV), "[^\\.]+"),
+                         year = str_extract(names(list.OV), "[0-9][0-9][0-9][0-9]"),
+                         OV_education_cat = list.OV)
+   
+  
+# Merge datasets
+ OV <- full_join(results_age_cat, results_hinc_good, by = c("country", "year"))
+ OV <- full_join(OV, results_paid_work, by = c("country", "year"))
+ OV <- full_join(OV, results_education_cat, by = c("country", "year"))
+ 
+write.csv(OV, "data_ov.csv", row.names = FALSE)
+
+    
+```
+
+```{r import-overlap, message=FALSE, warning=FALSE, include=FALSE}
+
+OV <- read.csv("data_ov.csv")
+```
+
+```{r visualize-overlap-trend, echo=FALSE, message=FALSE, warning=FALSE}
+library(plotly)
+OV.agg <- OV %>% group_by(year) %>% 
+  summarise_all(funs(mean(., na.rm = TRUE))) %>% arrange(year) %>% ungroup()
+
+   plot_ly(OV.agg, 
+             x = ~year, 
+             y = ~OV_age_cat, 
+             type = 'scatter', 
+             mode = 'lines',
+             name = "Age groups") %>%
+    add_trace(OV.agg, 
+             x = ~year, 
+             y = ~OV_hinc_good, 
+             type = 'scatter', 
+             mode = 'lines',
+             name = "Income groups",
+            add = TRUE)    %>%
+    add_trace(OV.agg, 
+             x = ~year, 
+             y = ~OV_paid_work, 
+             type = 'scatter', 
+             mode = 'lines',
+             name = "Work groups",
+            add = TRUE)  %>%
+    add_trace(OV.agg, 
+             x = ~year, 
+             y = ~OV_education_cat, 
+             type = 'scatter', 
+             mode = 'lines',
+             name = "Educ. groups",
+            add = TRUE)  %>% 
+  layout(yaxis = list(range = c(0.8,1), title = "Overlap coefficient"),
+         xaxis = list(title = "Year", 
+                      dtick = 2,
+                      tickangle = 45), autosize = F, height = 500, width = 800) 
+```
+
+Table \@ref(tab:OV-trends) displays the estimates a very simple linear regression model to illustrate display the time trend. If shows there there is both an a deacrease in the overall average of trust, as well as an increase in the overall polarization of trust across countries.
+
+```{r model-time-trend-OV, echo=FALSE, message=FALSE, warning=FALSE, results="asis"}
+library(stargazer)
+data.agg$year <- as.numeric(data.agg$year)
+fit1 <- lm(OV_age_cat ~ year + as.factor(country), data = OV)
+fit2 <- lm(OV_hinc_good ~ year + as.factor(country), data = OV)
+
+fit3 <- lm(OV_paid_work ~ year + as.factor(country), data = OV)
+fit4 <- lm(OV_education_cat ~ year + as.factor(country), data = OV)
+
+
+stargazer(fit1, fit2, fit3, fit4,
+          type="latex", 
+          title = "Time trend of overlap coefficient",
+          omit.stat=c("LL","ser","f","adj.rsq"), 
+          omit = c("country"),
+          dep.var.caption = "Outcome: Overlap coefficient",
+          dep.var.labels = c("Age groups", "Income groups", "Work groups", "Educ. groups"),
+          ci=FALSE, digits=2, 
+          ci.level=0.95,
+          single.row=FALSE, 
+          label = "tab:OV-trends", 
+          table.placement="H", 
+          # column.sep.width = "-7pt",
+          align = TRUE,
+          column.labels = c("M5", "M6", "M7", "M8"),
+          model.names = FALSE,
+          model.numbers = FALSE,
+          star.cutoffs = c(0.05, 0.01, 0.001),
+          notes = "* Data: European Social Survey; Country fixed-effects ",
+          header=FALSE,
+          no.space=TRUE,
+          font.size = "footnotesize"
+          )
+```
+
+
+
+```{r map1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="asis"}
+
+suppressPackageStartupMessages(library(sf))
+
+world <- st_as_sf(rnaturalearth::countries110)
+europe <- dplyr::filter(world, region_un=="Europe" & name!='Russia')
+
+# A bounding box for continental Europe.
+europe.bbox <- st_polygon(list(
+  matrix(c(-25,29,45,29,45,75,-25,75,-25,29),byrow = T,ncol = 2)))
+
+europe.clipped <- suppressWarnings(st_intersection(europe, st_sfc(europe.bbox, crs=st_crs(europe))))
+
+
+ggplot(europe.clipped, aes(fill=gdp_md_est/1000)) +
+  geom_sf(alpha=0.8,col='white') +
+  coord_sf(crs="+proj=aea +lat_1=36.333333333333336 +lat_2=65.66666666666667 +lon_0=14") +
+  hrbrthemes::theme_ipsum_rc() +
+  viridis::scale_fill_viridis(
+    name='Median GDP \n(in Billions)', direction = -1, labels=scales::dollar) +
+  labs(x=NULL, y=NULL, title=NULL,
+       caption='Source: http://www.naturalearthdata.com/')
+```
+
+```{r map2, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, results="asis"}
+
+
+# Compute the compound annual growth rate
+nuts2.df$cagr <- (((nuts2.df$pop2008 / nuts2.df$pop1999)^(1/9)) - 1) * 100
+
+# Set a custom color palette
+cols <- carto.pal(pal1 = "green.pal", # first color gradient
+                  n1 = 2, # number of colors in the first gradiant
+                  pal2 = "red.pal", # second color gradient
+                  n2 = 4) # number of colors in the second gradiant
+
+# Plot a layer with the extent of the EU28 countries with only a background color
+plot(nuts0.spdf, border = NA, col = NA, bg = "#A6CAE0")
+# Plot non european space
+plot(world.spdf, col  = "#E3DEBF", border=NA, add=TRUE)
+
+# Plot the compound annual growth rate
+choroLayer(spdf = nuts2.spdf, # SpatialPolygonsDataFrame of the regions
+           df = nuts2.df, # data frame with compound annual growth rate
+           var = "cagr", # compound annual growth rate field in df
+           breaks = c(-2.43,-1,0,0.5,1,2,3.1), # list of breaks
+           col = cols, # colors 
+           border = "grey40", # color of the polygons borders
+           lwd = 0.5, # width of the borders
+           legend.pos = "right", # position of the legend
+           legend.title.txt = "Compound Annual\nGrowth Rate", # title of the legend
+           legend.values.rnd = 2, # number of decimal in the legend values
+           add = TRUE) # add the layer to the current plot
+
+# Plot a layer of countries borders
+plot(nuts0.spdf,border = "grey20", lwd=0.75, add=TRUE)
+
+# Layout plot
+layoutLayer(title = "Demographic Trends", author = "cartography", 
+            sources = "Eurostat, 2008", frame = TRUE, col = NA, 
+            scale = NULL,coltitle = "black",
+            south = TRUE) # add a south arrow
+```
+
+# Discussion and conclusion {#sec:conclusion}
+
+
+* Use different measure to measure between-subgroup polarization. Here we exogenously defined those groups following theoretical rationales. This pre-supposes that we have good ideas in the first place..
+
+
+
+
+\normalsize
+
+
+\clearpage
+
+# Appendix
+## Summary tables
+
+```{r summary-stats, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE, results="asis"}
+# SUMMARY STATISTICS ####
+  for(i in seq(2002, 2016, by = 2)){
+    stargazer(data %>% filter(year == i) %>% data.frame(), 
+            type="latex", label = paste(str_replace(i, "_", " "), " summary table", sep = ""), font.size="scriptsize", table.placement="!ht", 
+            column.sep.width = ".2pt" , title = paste(str_replace(i, "_", " "), " summary table", sep = ""), 
+            digits = 2, rownames = FALSE)
+  }
+```
+
+
+
+
+\clearpage
+
+# References
+
+
+
+
