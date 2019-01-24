@@ -3,7 +3,7 @@ translate <- function(dataset = NULL,
                       source.lang = "DE",
                       target.lang = "EN",
                       auth_key = NULL,
-                      url = "https://api.deepl.com/v1/translate?text="
+                      url = "https://api.deepl.com/v2/translate?text="
                       ) {
 
 
