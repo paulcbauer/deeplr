@@ -6,7 +6,7 @@
 \usage{
 translate_df(dataset = NULL, column.name = NULL, source.lang = "DE",
   target.lang = "EN", add.source.lang = FALSE, auth_key = NULL,
-  url = "https://api.deepl.com/v1/translate?text=")
+  url = "https://api.deepl.com/v2/translate?text=")
 }
 \arguments{
 \item{dataset}{Dataframe with column of class character.}
