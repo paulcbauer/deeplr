@@ -2,7 +2,7 @@
 deeplr
 ======
 
-This repositoy is currently not regularly maintained. For a corresponding package that is regularly maintained see https://github.com/zumbov2/deeplr.
+This repositoy is currently not regularly maintained. Please use the following package that is regularly maintained: https://github.com/zumbov2/deeplr.
 
 
 The DeepL Translator made headlines for providing better translations than Google etc. `deeplr` is a quick & dirty coded package that contains functions - `translate_vec()` and `translate_df()` - that access the DeepL API. I was inspired by the [translateR package](https://github.com/ChristopherLucas/translateR) package.
